@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Heart, ShoppingCart, Trash2 } from 'lucide-react';
@@ -73,7 +73,13 @@ export const WishlistPage = () => {
   };
 
   const handleAddToCart = async (product: WishlistItem['product']) => {
-    await addToCart(product.id, 1);
+    console.log('Wishlist add to cart clicked for product:', product);
+    try {
+      await addToCart(product.id, 1);
+      console.log('Wishlist add to cart successful');
+    } catch (error) {
+      console.error('Wishlist add to cart failed:', error);
+    }
   };
 
   const formatPrice = (price: number) => {

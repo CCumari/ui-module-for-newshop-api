@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { apiClient } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -71,7 +72,10 @@ export const CartProvider = ({ children }: CartProviderProps) => {
   };
 
   const addToCart = async (productId: number, quantity: number = 1) => {
+    console.log('CartContext: addToCart called with', { productId, quantity, userId: user?.id });
+    
     if (!user?.id) {
+      console.log('CartContext: No user ID, showing sign in message');
       toast({
         title: 'Please sign in',
         description: 'You need to sign in to add items to cart',
@@ -80,16 +84,20 @@ export const CartProvider = ({ children }: CartProviderProps) => {
     }
 
     try {
+      console.log('CartContext: Making API call to add to cart');
       await apiClient.addToCart(user.id, {
         product_id: productId,
         quantity,
       });
+      console.log('CartContext: API call successful, refreshing cart');
       await refreshCart();
       toast({
         title: 'Added to cart',
         description: 'Item has been added to your cart',
       });
+      console.log('CartContext: Add to cart completed successfully');
     } catch (error: any) {
+      console.error('CartContext: Add to cart failed', error);
       toast({
         title: 'Error adding to cart',
         description: error.message,

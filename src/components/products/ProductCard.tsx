@@ -1,4 +1,3 @@
-import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -49,7 +48,10 @@ export const ProductCard = ({ product, onAddToCart, onToggleWishlist, onProductC
           size="sm"
           variant="ghost"
           className="absolute top-2 right-2 p-2"
-          onClick={() => onToggleWishlist?.(product.id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleWishlist?.(product.id);
+          }}
         >
           <Heart className={`h-4 w-4 ${inWishlist ? 'fill-red-500 text-red-500' : ''}`} />
         </Button>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -19,7 +19,11 @@ const checkoutSchema = z.object({
   billing_address: z.string().min(1, 'Billing address is required'),
 });
 
-export const CartSidebar = () => {
+interface CartSidebarProps {
+  onNavigateToCheckout?: () => void;
+}
+
+export const CartSidebar = ({ onNavigateToCheckout }: CartSidebarProps = {}) => {
   const { items, loading, updateQuantity, removeFromCart, getTotalPrice, getTotalItems, refreshCart } = useCart();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -157,12 +161,21 @@ export const CartSidebar = () => {
             <span>{formatPrice(getTotalPrice())}</span>
           </div>
           
-          <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
-            <DialogTrigger asChild>
-              <Button className="w-full" size="lg">
-                Checkout
-              </Button>
-            </DialogTrigger>
+          {onNavigateToCheckout ? (
+            <Button 
+              className="w-full" 
+              size="lg" 
+              onClick={onNavigateToCheckout}
+            >
+              Checkout
+            </Button>
+          ) : (
+            <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
+              <DialogTrigger asChild>
+                <Button className="w-full" size="lg">
+                  Checkout
+                </Button>
+              </DialogTrigger>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Complete Your Order</DialogTitle>
@@ -228,6 +241,7 @@ export const CartSidebar = () => {
               </Form>
             </DialogContent>
           </Dialog>
+          )}
         </div>
       </CardContent>
     </Card>

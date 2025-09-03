@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ProductCard } from './ProductCard';
+import { ProductFiltersComponent } from './filters/ProductFilters';
+import type { ProductFilters } from './filters/ProductFilters';
 import { apiClient } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
@@ -38,6 +40,17 @@ export const ProductList = ({ onProductClick }: ProductListProps) => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [loading, setLoading] = useState(true);
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
+  
+  // Advanced filtering state
+  const [filters, setFilters] = useState<ProductFilters>({
+    search: '',
+    minPrice: 0,
+    maxPrice: 50000, // $500 in cents
+    inStock: false,
+    categories: []
+  });
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  
   const { user, isAuthenticated } = useAuth();
   const { addToCart } = useCart();
   const { toast } = useToast();
@@ -49,6 +62,12 @@ export const ProductList = ({ onProductClick }: ProductListProps) => {
       loadWishlist();
     }
   }, [selectedCategory, isAuthenticated]);
+
+  // Apply filters whenever products or filters change
+  useEffect(() => {
+    const filtered = applyFilters(products);
+    setFilteredProducts(filtered);
+  }, [products, filters]);
 
   const loadProducts = async () => {
     try {
@@ -85,8 +104,66 @@ export const ProductList = ({ onProductClick }: ProductListProps) => {
     }
   };
 
+  // Filter products based on current filter state
+  const applyFilters = useCallback((productList: Product[]) => {
+    return productList.filter((product) => {
+      // Search filter
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        const matchesName = product.name.toLowerCase().includes(searchLower);
+        const matchesDescription = product.description.toLowerCase().includes(searchLower);
+        if (!matchesName && !matchesDescription) return false;
+      }
+
+      // Price range filter
+      if (product.price < filters.minPrice || product.price > filters.maxPrice) {
+        return false;
+      }
+
+      // Stock filter
+      if (filters.inStock && !product.in_stock) {
+        return false;
+      }
+
+      // Category filter
+      if (filters.categories.length > 0 && product.category) {
+        if (!filters.categories.includes(product.category.name)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [filters]);
+
+  // Update filtered products when products or filters change
+  useEffect(() => {
+    const filtered = applyFilters(products);
+    setFilteredProducts(filtered);
+  }, [products, applyFilters]);
+
+  const handleFiltersChange = (newFilters: ProductFilters) => {
+    setFilters(newFilters);
+  };
+
+  const handleFiltersReset = () => {
+    setFilters({
+      search: '',
+      minPrice: 0,
+      maxPrice: 50000,
+      inStock: false,
+      categories: []
+    });
+  };
+
+  const availableCategories = categories.map(cat => cat.name);
+
   const handleAddToCart = async (product: Product) => {
-    await addToCart(product.id, 1);
+    try {
+      await addToCart(product.id, 1);
+    } catch (error) {
+      console.error('ProductList: Add to cart failed:', error);
+    }
   };
 
   const handleToggleWishlist = async (productId: number) => {
@@ -133,45 +210,90 @@ export const ProductList = ({ onProductClick }: ProductListProps) => {
 
   return (
     <div className="space-y-6">
-      {categories.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setSelectedCategory('')}
-            className={`px-4 py-2 rounded-lg text-sm ${
-              !selectedCategory
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-            }`}
-          >
-            All Products
-          </button>
-          {categories.map((category) => (
-            <button
-              key={category.id}
-              onClick={() => setSelectedCategory(category.id.toString())}
-              className={`px-4 py-2 rounded-lg text-sm ${
-                selectedCategory === category.id.toString()
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-              }`}
-            >
-              {category.name}
-            </button>
-          ))}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {products.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={product}
-            onAddToCart={handleAddToCart}
-            onToggleWishlist={handleToggleWishlist}
-            onProductClick={onProductClick}
-            inWishlist={isInWishlist(product.id)}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Advanced Filters Sidebar */}
+        <div className="lg:col-span-1">
+          <ProductFiltersComponent
+            filters={filters}
+            onFiltersChange={handleFiltersChange}
+            onReset={handleFiltersReset}
+            availableCategories={availableCategories}
+            priceRange={{ min: 0, max: 50000 }}
           />
-        ))}
+        </div>
+
+        {/* Products Grid */}
+        <div className="lg:col-span-3 space-y-6">
+          {/* Category Pills (Legacy) */}
+          {categories.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setSelectedCategory('')}
+                className={`px-4 py-2 rounded-lg text-sm ${
+                  !selectedCategory
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                }`}
+              >
+                All Products
+              </button>
+              {categories.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => setSelectedCategory(category.id.toString())}
+                  className={`px-4 py-2 rounded-lg text-sm ${
+                    selectedCategory === category.id.toString()
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                  }`}
+                >
+                  {category.name}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Results Summary */}
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-medium">
+              {loading ? 'Loading...' : `${filteredProducts.length} product${filteredProducts.length !== 1 ? 's' : ''} found`}
+            </h3>
+          </div>
+
+          {/* Products Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {loading ? (
+              // Loading skeleton
+              Array(6).fill(0).map((_, index) => (
+                <div key={index} className="bg-card rounded-lg p-6 animate-pulse">
+                  <div className="bg-muted h-48 rounded-lg mb-4"></div>
+                  <div className="bg-muted h-4 rounded mb-2"></div>
+                  <div className="bg-muted h-4 rounded w-2/3 mb-4"></div>
+                  <div className="bg-muted h-8 rounded"></div>
+                </div>
+              ))
+            ) : filteredProducts.length > 0 ? (
+              filteredProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onAddToCart={handleAddToCart}
+                  onToggleWishlist={handleToggleWishlist}
+                  onProductClick={onProductClick}
+                  inWishlist={isInWishlist(product.id)}
+                />
+              ))
+            ) : (
+              // No results
+              <div className="col-span-full text-center py-12">
+                <div className="text-muted-foreground">
+                  <p className="text-lg mb-2">No products found</p>
+                  <p>Try adjusting your filters to see more results</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

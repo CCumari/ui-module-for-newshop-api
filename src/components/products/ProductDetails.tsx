@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -237,7 +237,9 @@ export const ProductDetails = ({ productId, onBack }: ProductDetailsProps) => {
                   <Button
                     key={variant.id}
                     variant={selectedVariant?.id === variant.id ? 'default' : 'outline'}
-                    onClick={() => setSelectedVariant(variant)}
+                    onClick={() => {
+                      setSelectedVariant(variant);
+                    }}
                     className="flex flex-col items-start h-auto p-3"
                     disabled={variant.stock_quantity === 0}
                   >

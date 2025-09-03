@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { CartProvider } from '@/contexts/CartContext';
 import { LoginForm } from '@/components/auth/LoginForm';
@@ -9,11 +9,12 @@ import { WishlistPage } from '@/components/wishlist/WishlistPage';
 import { OrdersPage } from '@/components/orders/OrdersPage';
 import { UserProfile } from '@/components/user/UserProfile';
 import { ProductDetails } from '@/components/products/ProductDetails';
+import { CheckoutPage } from '@/components/checkout/CheckoutPage';
+import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Toaster } from '@/components/ui/toaster';
-import { ShoppingCart, Heart, Package, User } from 'lucide-react';
+import { ShoppingCart, Heart, Package, User, Settings } from 'lucide-react';
 
 const AppContent = () => {
   const { user, logout, loading, isAuthenticated } = useAuth();
@@ -104,6 +105,16 @@ const AppContent = () => {
                 <User className="h-4 w-4 mr-2" />
                 Profile
               </Button>
+              
+              {/* Admin Dashboard - For demo purposes, available to all users */}
+              <Button
+                variant={currentView === 'admin' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setCurrentView('admin')}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Admin
+              </Button>
             </nav>
 
             <div className="flex items-center space-x-4">
@@ -126,7 +137,7 @@ const AppContent = () => {
               <h2 className="text-2xl font-bold mb-2">Products</h2>
               <p className="text-muted-foreground">Discover our amazing products</p>
             </div>
-            <ProductList onProductClick={(id) => setSelectedProductId(id)} />
+            <ProductList onProductClick={(id: number) => setSelectedProductId(id)} />
           </div>
         )}
         
@@ -140,7 +151,7 @@ const AppContent = () => {
         {currentView === 'cart' && (
           <div>
             <h2 className="text-2xl font-bold mb-6">Shopping Cart</h2>
-            <CartSidebar />
+            <CartSidebar onNavigateToCheckout={() => setCurrentView('checkout')} />
           </div>
         )}
         
@@ -162,6 +173,25 @@ const AppContent = () => {
           <div>
             <h2 className="text-2xl font-bold mb-6">My Profile</h2>
             <UserProfile />
+          </div>
+        )}
+
+        {/* Admin Dashboard */}
+        {currentView === 'admin' && (
+          <AdminDashboard />
+        )}
+
+        {/* Checkout View */}
+        {currentView === 'checkout' && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">Checkout</h2>
+            <CheckoutPage 
+              onBack={() => setCurrentView('cart')}
+              onOrderComplete={() => {
+                setCurrentView('orders');
+                setSelectedProductId(null);
+              }}
+            />
           </div>
         )}
       </main>
